@@ -1,0 +1,86 @@
+//Necesita correcciones
+#include <Arduino.h>
+#include <driver/ledc.h>
+
+const int rchannel = 0;
+const int vchannel = 1;
+const int bchannel = 2;
+const int freqPWM = 5000;
+const int resolucion = 8;
+const int ledRojo = 13;
+const int ledVerde = 21;
+const int ledAzul = 5;
+const int botselec = 14;
+const int botbrillo = 25;
+const int debounceDelay = 50;
+
+unsigned long lastDebounceTime1 = 0;
+unsigned long lastDebounceTime2 = 0;
+bool lastButtonState1 = HIGH;
+bool lastButtonState2 = HIGH;
+bool buttonState1 = HIGH;
+bool buttonState2 = HIGH;
+int contador = 0;
+int brillo = 0;
+
+void setup() {
+  configurar();
+  pinMode(botselec, INPUT_PULLUP);
+  pinMode(botbrillo, INPUT_PULLUP);
+  pinMode(ledRojo, OUTPUT);
+  pinMode(ledVerde, OUTPUT);
+  pinMode(ledAzul, OUTPUT);
+}
+
+void loop() {
+  int reading1 = digitalRead(botselec);
+  int reading2 = digitalRead(botbrillo);
+
+  // Button debouncing for color selection
+  if (reading1 != lastButtonState1) {
+    lastDebounceTime1 = millis();
+  }
+  if ((millis() - lastDebounceTime1) > debounceDelay) {
+    if (reading1 != buttonState1) {
+      buttonState1 = reading1;
+      if (buttonState1 == LOW) {
+        contador = (contador + 1) % 3;
+        updateLEDColor();
+      }
+    }
+  }
+
+  // Button debouncing for brightness adjustment
+  if (reading2 != lastButtonState2) {
+    lastDebounceTime2 = millis();
+  }
+  if ((millis() - lastDebounceTime2) > debounceDelay) {
+    if (reading2 != buttonState2) {
+      buttonState2 = reading2;
+      if (buttonState2 == LOW) {
+        brillo += 10;
+        if (brillo > 255) {
+          brillo = 0;
+        }
+        updateLEDColor();
+      }
+    }
+  }
+}
+
+void configurar() {
+  ledcSetup(rchannel, freqPWM, resolucion);
+  ledcSetup(vchannel, freqPWM, resolucion);
+  ledcSetup(bchannel, freqPWM, resolucion);
+
+  ledcAttachPin(ledRojo, rchannel);
+  ledcAttachPin(ledVerde, vchannel);
+  ledcAttachPin(ledAzul, bchannel);
+  updateLEDColor();
+}
+
+void updateLEDColor() {
+  digitalWrite(ledRojo, (contador == 0) ? brillo : LOW);
+  digitalWrite(ledVerde, (contador == 1) ? brillo : LOW);
+  digitalWrite(ledAzul, (contador == 2) ? brillo : LOW);
+}

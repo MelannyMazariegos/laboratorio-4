@@ -1,0 +1,44 @@
+#include <Arduino.h>
+#include <driver/ledc.h>
+
+const int pinservo = 18;
+const int derecha = 14;
+const int izquierda = 25;
+
+int posicionInicial = 0; 
+const int posicionMinima = 0; 
+const int posicionMaxima = 180; 
+const int incremento = 5; 
+void setup() {
+  pinMode(derecha, INPUT_PULLUP);
+  pinMode(izquierda, INPUT_PULLUP);
+
+  
+  ledcSetup(0, 50, 10); 
+  ledcAttachPin(pinservo, 0); 
+  ledcWrite(0, map(posicionInicial, 0, 180, 0, 1023)); 
+}
+
+void loop() {
+  if (digitalRead(derecha) == LOW) {
+    if (posicionInicial < posicionMaxima) {
+      posicionInicial += incremento;
+      if (posicionInicial > posicionMaxima) {
+        posicionInicial = posicionMaxima; 
+      }
+      ledcWrite(0, map(posicionInicial, 0, 180, 0, 1023));
+    }
+    delay(200); 
+  } else if (digitalRead(izquierda) == LOW) {
+    
+    if (posicionInicial > posicionMinima) {
+      posicionInicial -= incremento;
+      if (posicionInicial < posicionMinima) {
+        posicionInicial = posicionMinima; 
+      }
+      ledcWrite(0, map(posicionInicial, 0, 180, 0, 1023));
+    }
+    delay(200); 
+  }
+  delay(50);
+}

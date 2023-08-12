@@ -1,0 +1,136 @@
+//Funciona la parte del laboratorio 4
+//No funciona el junto con el servo
+#include <Arduino.h>
+#include <driver/ledc.h>
+
+#define ledRojo 13
+#define pinservo 18
+#define ledVerde 21
+#define ledAzul 5
+#define botselecB3 14
+#define botbrilloB4 26
+#define botderechaB1 25
+#define botizquierdaB2 33
+const int rchannel = 1;
+const int vchannel = 2;
+const int bchannel = 3;
+const int freqPWM = 5000;
+const int resolucion = 8;
+const int debounceDelay = 50;
+void configurar(void);
+void moverServo(void);
+unsigned long lastDebounceTime1 = 0;
+unsigned long lastDebounceTime2 = 0;
+unsigned long lastDebounceTime3 = 0;
+bool lastButtonState1 = HIGH;
+bool lastButtonState2 = HIGH;
+bool lastButtonState3 = HIGH;
+bool buttonState1 = HIGH;
+bool buttonState2 = HIGH;
+bool buttonState3 = HIGH;
+int contador = 0;
+int brillo = 0;
+int posicionInicial = 0; 
+const int posicionMinima = 0; 
+const int posicionMaxima = 180; 
+const int incremento = 5; 
+
+void configurar(void);
+void moverServo(void);
+
+void setup() {
+  configurar();
+  pinMode(botselecB3, INPUT_PULLUP);
+  pinMode(botbrilloB4, INPUT_PULLUP);
+  pinMode(botderechaB1, INPUT_PULLUP);
+  pinMode(botizquierdaB2, INPUT_PULLUP);
+  ledcSetup(0, 50, 10); 
+  ledcAttachPin(pinservo, 0); 
+  ledcWrite(0, map(posicionInicial, 0, 180, 0, 1023));
+}
+
+void loop() {
+  int reading1 = digitalRead(botselecB3);
+  int reading2 = digitalRead(botbrilloB4);
+  if ((millis() - lastDebounceTime1) > debounceDelay) {
+    if (reading1 != lastButtonState1) {
+      lastDebounceTime1 = millis();
+      lastButtonState1 = reading1;
+      if (lastButtonState1 == LOW) {
+        contador = (contador + 1) % 4;
+      }
+    }
+  }
+
+  if ((millis() - lastDebounceTime2) > debounceDelay) {
+    if (reading2 != lastButtonState2) {
+      lastDebounceTime2 = millis();
+      lastButtonState2 = reading2;
+      if (lastButtonState2 == LOW) {
+        brillo += 10;
+        if (brillo > 255) {
+          brillo = 0;
+        }
+      }
+    }
+  }
+  moverServo();
+  switch (contador) {
+    case 0: 
+      ledcWrite(rchannel, brillo);
+      ledcWrite(vchannel, 0);
+      ledcWrite(bchannel, 0);
+      posicionInicial = 0;
+      break;
+    case 1: 
+      ledcWrite(rchannel, 0);
+      ledcWrite(vchannel, brillo);
+      ledcWrite(bchannel, 0);
+      posicionInicial = 90;
+      break;
+    case 2: 
+      ledcWrite(rchannel, 0);
+      ledcWrite(vchannel, 0);
+      ledcWrite(bchannel, brillo);
+      posicionInicial = 180;
+      break;
+    case 3:
+      ledcWrite(rchannel, 0);
+      ledcWrite(vchannel, 0);
+      ledcWrite(bchannel, 0);
+  }
+}
+
+void configurar() {
+  ledcSetup(rchannel, freqPWM, resolucion);
+  ledcSetup(vchannel, freqPWM, resolucion);
+  ledcSetup(bchannel, freqPWM, resolucion);
+
+  ledcAttachPin(ledRojo, rchannel);
+  ledcAttachPin(ledVerde, vchannel);
+  ledcAttachPin(ledAzul, bchannel);
+}
+
+void moverServo(){
+  int reading3 = digitalRead(botderechaB1);
+  int reading4 = digitalRead(botizquierdaB2);
+  if (reading3 == LOW) {
+    if (posicionInicial < posicionMaxima) {
+      posicionInicial += incremento;
+      if (posicionInicial > posicionMaxima) {
+        posicionInicial = posicionMaxima; 
+      }
+      ledcWrite(0, map(posicionInicial, 0, 180, 0, 1023));
+    }
+    delay(200); 
+  } else if (reading4 == LOW) {
+    if (posicionInicial > posicionMinima) {
+      posicionInicial -= incremento;
+      if (posicionInicial < posicionMinima) {
+        posicionInicial = posicionMinima; 
+      }
+      ledcWrite(0, map(posicionInicial, 0, 180, 0, 1023));
+    }
+    delay(200); 
+  }
+}

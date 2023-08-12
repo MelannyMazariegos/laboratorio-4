@@ -1,29 +1,31 @@
-//Necesita correcciones
-//Ya se puede seleccionar el led
-//Falta el brillo del led
 #include <Arduino.h>
 #include <driver/ledc.h>
-
+//Constantes de canales para leds
 const int rchannel = 0;
 const int vchannel = 1;
 const int bchannel = 2;
+//Frecuencia y resolucion
 const int freqPWM = 5000;
 const int resolucion = 8;
+//Pines de los leds y botones
 const int ledRojo = 13;
 const int ledVerde = 21;
 const int ledAzul = 5;
-const int botselec = 14;
-const int botbrillo = 25;
+const int botselec = 14; //Boton para seleccionar
+const int botbrillo = 25; //Boton para la intensidad de la luz
 const int debounceDelay = 50;
-void configurar(void);
+//Variables para el debounce de los botones
 unsigned long lastDebounceTime1 = 0;
 unsigned long lastDebounceTime2 = 0;
 bool lastButtonState1 = HIGH;
 bool lastButtonState2 = HIGH;
 bool buttonState1 = HIGH;
 bool buttonState2 = HIGH;
+//Contadores para los casos e intensidad de la luz
 int contador = 0;
 int brillo = 0;
+//Declarar la funcion para configurar el PWM
+void configurar(void);
 
 void setup() {
   configurar();
@@ -34,20 +36,22 @@ void setup() {
 void loop() {
   int reading1 = digitalRead(botselec);
   int reading2 = digitalRead(botbrillo);
-  // Button debouncing for color selection
+  //Debounce para el boton de seleccion
   if ((millis() - lastDebounceTime1) > debounceDelay) {
-    if (reading1 != buttonState1) {
-      buttonState1 = reading1;
-      if (buttonState1 == LOW) {
+    if (reading1 != lastButtonState1) {
+      lastDebounceTime1 = millis();
+      lastButtonState1 = reading1;
+      if (lastButtonState1 == LOW) {
         contador = (contador + 1) % 3;
       }
     }
   }
-  // Button debouncing for brightness adjustment
+  // Debounce para el boton de intesidad de las leds
   if ((millis() - lastDebounceTime2) > debounceDelay) {
-    if (reading2 != buttonState2) {
-      buttonState2 = reading2;
-      if (buttonState2 == LOW) {
+    if (reading2 != lastButtonState2) {
+      lastDebounceTime2 = millis();
+      lastButtonState2 = reading2;
+      if (lastButtonState2 == LOW) {
         brillo += 10;
         if (brillo > 255) {
           brillo = 0;
@@ -55,18 +59,19 @@ void loop() {
       }
     }
   }
+  //Casos para que se enciendan las leds 
   switch (contador) {
-    case 0: // Rojo
+    case 0: 
       ledcWrite(rchannel, brillo);
       ledcWrite(vchannel, 0);
       ledcWrite(bchannel, 0);
       break;
-    case 1: // Verde
+    case 1: 
       ledcWrite(rchannel, 0);
       ledcWrite(vchannel, brillo);
       ledcWrite(bchannel, 0);
       break;
-    case 2: // Azul
+    case 2: 
       ledcWrite(rchannel, 0);
       ledcWrite(vchannel, 0);
       ledcWrite(bchannel, brillo);

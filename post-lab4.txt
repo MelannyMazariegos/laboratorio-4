@@ -1,8 +1,7 @@
-//Funciona la parte del laboratorio 4
-//No funciona el junto con el servo
+//Incluir librerias
 #include <Arduino.h>
 #include <driver/ledc.h>
-
+//Pines para los botones y leds
 #define ledRojo 13
 #define pinservo 18
 #define ledVerde 21
@@ -11,48 +10,50 @@
 #define botbrilloB4 26
 #define botderechaB1 25
 #define botizquierdaB2 33
+//Canales para los leds
 const int rchannel = 1;
 const int vchannel = 2;
 const int bchannel = 3;
+//Variables para configurar los leds
 const int freqPWM = 5000;
 const int resolucion = 8;
+//Variables para el debounce de los botones
 const int debounceDelay = 50;
-void configurar(void);
-void moverServo(void);
 unsigned long lastDebounceTime1 = 0;
 unsigned long lastDebounceTime2 = 0;
-unsigned long lastDebounceTime3 = 0;
 bool lastButtonState1 = HIGH;
 bool lastButtonState2 = HIGH;
-bool lastButtonState3 = HIGH;
 bool buttonState1 = HIGH;
 bool buttonState2 = HIGH;
-bool buttonState3 = HIGH;
+//Contadores para el orden de leds y brillo de los leds
 int contador = 0;
 int brillo = 0;
-int posicionInicial = 0; 
-const int posicionMinima = 0; 
-const int posicionMaxima = 180; 
-const int incremento = 5; 
-
+//Variables para mover el servo
+int posicionInicial = 0;
+const int posicionMinima = 0;
+const int posicionMaxima = 180;
+const int incremento = 5;
+//Declarar las funciones
 void configurar(void);
 void moverServo(void);
+void Servolibre(void);
 
 void setup() {
-  configurar();
+  configurar();//Funcion para configurar los leds
   pinMode(botselecB3, INPUT_PULLUP);
   pinMode(botbrilloB4, INPUT_PULLUP);
   pinMode(botderechaB1, INPUT_PULLUP);
   pinMode(botizquierdaB2, INPUT_PULLUP);
-  ledcSetup(0, 50, 10); 
-  ledcAttachPin(pinservo, 0); 
-  ledcWrite(0, map(posicionInicial, 0, 180, 0, 1023));
+  ledcSetup(0, 50, 10); //Configuracion del servo
+  ledcAttachPin(pinservo, 0);
+  moverServo(); //Funcion para mover el servo
 }
 
 void loop() {
   int reading1 = digitalRead(botselecB3);
   int reading2 = digitalRead(botbrilloB4);
-  if ((millis() - lastDebounceTime1) > debounceDelay) {
+  //Debounce del boton para seleccionar el led
+  if ((millis() - lastDebounceTime1) > debounceDelay) { 
     if (reading1 != lastButtonState1) {
       lastDebounceTime1 = millis();
       lastButtonState1 = reading1;
@@ -61,7 +62,7 @@ void loop() {
       }
     }
   }
-
+  //Debounce del boton para aumentar la intensidad de los leds
   if ((millis() - lastDebounceTime2) > debounceDelay) {
     if (reading2 != lastButtonState2) {
       lastDebounceTime2 = millis();
@@ -74,33 +75,38 @@ void loop() {
       }
     }
   }
-  moverServo();
+  //Casos  
   switch (contador) {
-    case 0: 
+    case 0:
       ledcWrite(rchannel, brillo);
       ledcWrite(vchannel, 0);
       ledcWrite(bchannel, 0);
-      posicionInicial = 0;
+      posicionInicial = 5; //Angulo en que va el servo
+      moverServo();
       break;
-    case 1: 
+    case 1:
       ledcWrite(rchannel, 0);
       ledcWrite(vchannel, brillo);
       ledcWrite(bchannel, 0);
-      posicionInicial = 90;
+      posicionInicial = 15; //Angulo en que va el servo
+      moverServo();
       break;
-    case 2: 
+    case 2:
       ledcWrite(rchannel, 0);
       ledcWrite(vchannel, 0);
       ledcWrite(bchannel, brillo);
-      posicionInicial = 180;
+      posicionInicial = 30; //Angulo en que va el servo
+      moverServo();
       break;
     case 3:
       ledcWrite(rchannel, 0);
       ledcWrite(vchannel, 0);
       ledcWrite(bchannel, 0);
+      Servolibre(); //Funcion para mover el servo libremente
+      break;
   }
 }
-
+//Funcion para configurar los leds
 void configurar() {
   ledcSetup(rchannel, freqPWM, resolucion);
   ledcSetup(vchannel, freqPWM, resolucion);
@@ -110,27 +116,32 @@ void configurar() {
   ledcAttachPin(ledVerde, vchannel);
   ledcAttachPin(ledAzul, bchannel);
 }
-
-void moverServo(){
+//Funcion para mover el servo a una posicion
+void moverServo() {
+  ledcWrite(0, map(posicionInicial, 0, 180, 0, 1023));
+}
+//Funcion para mover libremente el servo
+void Servolibre(){
   int reading3 = digitalRead(botderechaB1);
   int reading4 = digitalRead(botizquierdaB2);
   if (reading3 == LOW) {
     if (posicionInicial < posicionMaxima) {
       posicionInicial += incremento;
       if (posicionInicial > posicionMaxima) {
-        posicionInicial = posicionMaxima; 
+        posicionInicial = posicionMaxima;
       }
-      ledcWrite(0, map(posicionInicial, 0, 180, 0, 1023));
+      moverServo();
     }
-    delay(200); 
-  } else if (reading4 == LOW) {
+    delay(200);
+  } 
+  if (reading4 == LOW) {
     if (posicionInicial > posicionMinima) {
       posicionInicial -= incremento;
       if (posicionInicial < posicionMinima) {
-        posicionInicial = posicionMinima; 
+        posicionInicial = posicionMinima;
       }
-      ledcWrite(0, map(posicionInicial, 0, 180, 0, 1023));
+      moverServo();
     }
-    delay(200); 
+    delay(200);
   }
 }
